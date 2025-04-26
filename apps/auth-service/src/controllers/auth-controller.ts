@@ -1,11 +1,13 @@
 import { NextFunction, Request, Response } from "express";
 import {
   checkOtpRestrictions,
+  handleForgotPassword,
   sendOtp,
   trackOtpRequests,
   validateLoginUser,
   validateRegistrationData,
   validateVerifyUser,
+  verifyForgotPasswordOtp,
   verifyOtp,
 } from "../utils/auth.helper";
 import prisma from "@packages/libs/prisma";
@@ -142,6 +144,76 @@ export const loginUser = async (
         email: user.email,
       },
     });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// User forgot password
+export const userForgotPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    await handleForgotPassword(req, res, next, "user");
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Verify forgot password OTP
+export const verifyUserForgotPasswordOtp = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    await verifyForgotPasswordOtp(req, res, next);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// User reset password
+export const userResetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+      throw new ValidationError(
+        "Please provide email address and new password"
+      );
+    }
+
+    const user = await prisma.users.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new ValidationError("User not found");
+    }
+
+    // Compare new password with old password
+    const isSamePassword = await bcrypt.compare(newPassword, user.password!);
+
+    if (isSamePassword) {
+      throw new ValidationError("New password cannot be same as old password");
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.users.update({
+      where: { email },
+      data: {
+        password: hashedNewPassword,
+      },
+    });
+
+    return res.status(200).json({ message: "Password reset successfully!" });
   } catch (error) {
     return next(error);
   }
