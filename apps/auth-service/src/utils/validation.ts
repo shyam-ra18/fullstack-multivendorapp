@@ -28,3 +28,8 @@ export const verifyUserSchema = z.object({
   password: z.string().min(1, "Password is required"),
   otp: z.string().length(4, "OTP must be 4 digits"),
 });
+
+export const verifyLoginSchema = z.object({
+  email: z.string().regex(emailValidationRegex, "Invalid email format"),
+  password: z.string().min(1, "Password is required"),
+});

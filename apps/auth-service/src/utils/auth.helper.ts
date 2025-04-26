@@ -1,6 +1,10 @@
 import { NextFunction } from "express";
 import { ValidationError } from "@packages/error-handler";
-import { registrationSchema, verifyUserSchema } from "./validation";
+import {
+  registrationSchema,
+  verifyLoginSchema,
+  verifyUserSchema,
+} from "./validation";
 import crypto from "crypto";
 import redis from "@packages/libs/redis";
 import { sendEmail } from "./sendMail";
@@ -22,6 +26,15 @@ export const validateRegistrationData = (
 
 export const validateVerifyUser = (data: any) => {
   const result = verifyUserSchema.safeParse(data);
+
+  if (!result.success) {
+    const issues = result.error.format();
+    throw new ValidationError("Validation error", issues);
+  }
+};
+
+export const validateLoginUser = (data: any) => {
+  const result = verifyLoginSchema.safeParse(data);
 
   if (!result.success) {
     const issues = result.error.format();
@@ -96,7 +109,7 @@ export const verifyOtp = async (
   const storedOtp = await redis.get(`opt:${email}`);
 
   if (!storedOtp) {
-    return next(new ValidationError("Invalid or Expired OTP!"));
+    throw new ValidationError("Invalid or Expired OTP!");
   }
 
   const failedAttemptsKey = `otp_attempts:${email}`; // number of otp requests
@@ -106,17 +119,13 @@ export const verifyOtp = async (
     if (failedAttempts >= 2) {
       await redis.set(`otp_lock:${email}`, "locked", "EX", 60 * 30); // Lock for 30 minutes
       await redis.del(`otp:${email}`, failedAttemptsKey);
-      return next(
-        new ValidationError(
-          "Too many incorrect attempts. Your account is locked for 30 minutes!"
-        )
+      throw new ValidationError(
+        "Too many incorrect attempts. Your account is locked for 30 minutes!"
       );
     }
     await redis.set(failedAttemptsKey, failedAttempts + 1, "EX", 60 * 5);
-    return next(
-      new ValidationError(
-        `Invalid OTP! You have ${2 - failedAttempts} attempts left.`
-      )
+    throw new ValidationError(
+      `Invalid OTP! You have ${2 - failedAttempts} attempts left.`
     );
   }
 
