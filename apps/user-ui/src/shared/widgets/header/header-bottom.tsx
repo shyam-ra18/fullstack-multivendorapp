@@ -18,7 +18,6 @@ const HeaderBottom = () => {
         const handleScroll = () => {
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             if (scrollTop > 100) {
-                console.log(scrollTop)
                 setIsSticky(true);
             } else {
                 setIsSticky(false);

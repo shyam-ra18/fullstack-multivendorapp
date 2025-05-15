@@ -149,6 +149,7 @@ export const verifyForgotPasswordOtp = async (
     return res.status(200).json({ message: "OTP verified successfully" });
   } catch (error) {
     next(error);
+    return;
   }
 };
 
@@ -185,5 +186,6 @@ export const handleForgotPassword = async (
       .json({ message: "OTP sent to email. Please verify your account." });
   } catch (error) {
     next(error);
+    return;
   }
 };
