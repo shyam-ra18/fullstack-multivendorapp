@@ -149,6 +149,45 @@ export const loginUser = async (
   }
 };
 
+// Refresh token user
+export const refreshToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const refreshToken = req.cookies.refresh_Token;
+    if (!refreshToken) {
+      throw new ValidationError("Unauthorized! no refresh token found.");
+    }
+
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.REFRESH_TOKEN_JWT_SECRET_KEY as string
+    ) as { id: string; role: string };
+
+    if (!decoded || !decoded?.id || !decoded?.role) {
+      throw new ValidationError("Forbidden! Invalid refresh token.");
+    }
+
+    const user = await prisma.users.findUnique({ where: { id: decoded.id } });
+    if (!user) {
+      throw new ValidationError("Forbidden! User/Seller not found.");
+    }
+
+    const newAccessToken = jwt.sign(
+      { id: decoded.id, role: decoded.role },
+      process.env.ACCESS_TOKEN_JWT_SECRET_KEY as string,
+      { expiresIn: "30m" }
+    );
+    setCookie(res, "access_Token", newAccessToken);
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 // User forgot password
 export const userForgotPassword = async (
   req: Request,

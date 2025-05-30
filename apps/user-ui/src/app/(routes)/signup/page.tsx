@@ -13,10 +13,10 @@ type FormData = {
     email: string;
     password: string;
 };
+
 const Signup = () => {
 
     const [passwordVisible, setPasswordVisible] = useState(false);
-    const [ServerError, setServerError] = useState<string | null>(null);
     const [canResend, setCanResend] = useState<boolean>(false);
     const [showOtp, setShowOtp] = useState<boolean>(false);
     const [timer, setTimer] = useState(60);
@@ -53,12 +53,25 @@ const Signup = () => {
             setTimer(60);
             startResendTimer();
         }
+    });
+
+    const verifyOtpMutation = useMutation({
+        mutationFn: async () => {
+            if (!userData) return;
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/verify-user`, {
+                ...userData,
+                otp: otp.join('')
+            });
+            return response.data;
+        },
+        onSuccess: () => {
+            router.push('/login');
+        }
     })
 
     const onSubmit = (data: FormData) => {
         signupMutation.mutate(data);
     };
-
 
     const handleOtpChange = (index: number, value: string) => {
         if (!/^[0-9]?$/.test(value)) return;
@@ -78,7 +91,11 @@ const Signup = () => {
         }
     }
 
-    const resendOtp = () => { }
+    const resendOtp = () => {
+        if (userData) {
+            signupMutation.mutate(userData);
+        }
+    }
 
     return (
         <div className='w-full py-10 min-h-[85vh] bg-[#f1f1f1]'>
@@ -178,7 +195,6 @@ const Signup = () => {
                                 {signupMutation.isPending ? "Signing up..." : "Signup"}
                             </button>
 
-                            {ServerError && <span className='text-red-500 text-sm mt-2'>{ServerError}</span>}
                         </form>
                     ) : (
                         <div>
@@ -203,8 +219,10 @@ const Signup = () => {
                             </div>
                             <button
                                 className='w-full mt-4 text-lg cursor-pointer bg-blue-500 text-white py-2 rounded-lg'
+                                disabled={verifyOtpMutation.isPending}
+                                onClick={() => verifyOtpMutation.mutate()}
                             >
-                                Verify OTP
+                                {verifyOtpMutation.isPending ? "Verifying..." : 'Verify OTP'}
                             </button>
                             <p className='text-center text-sm mt-4'>
                                 {canResend ? (
@@ -218,6 +236,10 @@ const Signup = () => {
                                     `Resend OTP in ${timer}s`
                                 )}
                             </p>
+                            {
+                                verifyOtpMutation.isError && verifyOtpMutation.error instanceof Error &&
+                                <p className='text-red-500 text-sm mt-2'>{verifyOtpMutation.error?.response?.data?.message || verifyOtpMutation.error.message}</p>
+                            }
                         </div>
                     )}
                 </div>
