@@ -1,9 +1,13 @@
-import Link from 'next/link'
-import React from 'react'
+"use client";
+
 import { Heart, Search, ShoppingCart, UserIcon } from 'lucide-react'
+import Link from 'next/link'
 import HeaderBottom from './header-bottom'
+import useUser from 'apps/user-ui/src/hooks/useUser';
 
 const Header = () => {
+    const { user, isLoading, isError, refetch } = useUser();
+
     return (
         <div className='w-full bg-white'>
             <div className='w-[80%] py-5 m-auto flex items-center justify-between' >
@@ -29,16 +33,33 @@ const Header = () => {
 
                 <div className='flex items-center gap-8' >
                     <div className='flex items-center gap-2' >
-                        <Link
-                            href="/login"
-                            className='border-2 w-[46px] h-[46px] rounded-full flex items-center justify-center border-[#010f1c1a]'
-                        >
-                            <UserIcon size={27} color='black' />
-                        </Link>
-                        <Link href="/login">
-                            <span className='block font-medium' >Hello,</span>
-                            <span className='font-semibold'>Sign In</span>
-                        </Link>
+                        {!isLoading && user ? (
+                            <>
+                                <Link
+                                    href="/profile"
+                                    className='border-2 w-[46px] h-[46px] rounded-full flex items-center justify-center border-[#010f1c1a]'
+                                >
+                                    <UserIcon size={27} color='black' />
+                                </Link>
+                                <Link href="/profile">
+                                    <span className='block font-medium'>Hello,</span>
+                                    <span className='font-semibold'>{user?.name}</span>
+                                </Link>
+                            </>
+                        ) : (
+                            <>
+                                <Link
+                                    href="/login"
+                                    className='border-2 w-[46px] h-[46px] rounded-full flex items-center justify-center border-[#010f1c1a]'
+                                >
+                                    <UserIcon size={27} color='black' />
+                                </Link>
+                                <Link href="/login">
+                                    <span className='block font-medium' >Hello,</span>
+                                    <span className='font-semibold'>{isLoading ? '...' : "Sign In"}</span>
+                                </Link>
+                            </>
+                        )}
                     </div>
 
                     <div className='flex items-center gap-5' >

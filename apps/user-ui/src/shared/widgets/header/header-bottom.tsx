@@ -1,6 +1,7 @@
 "use client";
 
 import { navItems } from 'apps/user-ui/src/configs/constants';
+import useUser from 'apps/user-ui/src/hooks/useUser';
 import { AlignLeft, ChevronDown, Heart, ShoppingCart, UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react'
@@ -8,6 +9,7 @@ import React, { useEffect, useState } from 'react'
 const HeaderBottom = () => {
     const [Show, setShow] = useState(false);
     const [IsSticky, setIsSticky] = useState(false);
+    const { user, isLoading, isError, refetch } = useUser();
 
     const handleShow = () => {
         setShow(!Show);
@@ -67,16 +69,33 @@ const HeaderBottom = () => {
                     {IsSticky ? (
                         <div className='flex items-center gap-8' >
                             <div className='flex items-center gap-2' >
-                                <Link
-                                    href="/login"
-                                    className='border-2 w-[46px] h-[46px] rounded-full flex items-center justify-center border-[#010f1c1a]'
-                                >
-                                    <UserIcon size={27} color='black' />
-                                </Link>
-                                <Link href="/login">
-                                    <span className='block font-medium' >Hello,</span>
-                                    <span className='font-semibold'>Sign In</span>
-                                </Link>
+                                {!isLoading && user ? (
+                                    <>
+                                        <Link
+                                            href="/profile"
+                                            className='border-2 w-[46px] h-[46px] rounded-full flex items-center justify-center border-[#010f1c1a]'
+                                        >
+                                            <UserIcon size={27} color='black' />
+                                        </Link>
+                                        <Link href="/profile">
+                                            <span className='block font-medium'>Hello,</span>
+                                            <span className='font-semibold'>{user?.name}</span>
+                                        </Link>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Link
+                                            href="/login"
+                                            className='border-2 w-[46px] h-[46px] rounded-full flex items-center justify-center border-[#010f1c1a]'
+                                        >
+                                            <UserIcon size={27} color='black' />
+                                        </Link>
+                                        <Link href="/login">
+                                            <span className='block font-medium' >Hello,</span>
+                                            <span className='font-semibold'>{isLoading ? '...' : "Sign In"}</span>
+                                        </Link>
+                                    </>
+                                )}
                             </div>
 
                             <div className='flex items-center gap-5' >

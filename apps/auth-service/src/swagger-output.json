@@ -135,7 +135,7 @@
         }
       }
     },
-    "/user-reser-password": {
+    "/user-reset-password": {
       "post": {
         "description": "",
         "parameters": [

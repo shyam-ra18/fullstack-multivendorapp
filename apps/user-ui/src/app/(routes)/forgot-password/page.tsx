@@ -76,7 +76,7 @@ const ForgotPassword = () => {
     const resetPasswordMutation = useMutation({
         mutationFn: async ({ password }: { password: string }) => {
             if (!userEmail) return;
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/user-reser-password`, {
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/user-reset-password`, {
                 email: userEmail,
                 newPassword: password
             });

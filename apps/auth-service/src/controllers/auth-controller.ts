@@ -188,6 +188,19 @@ export const refreshToken = async (
   }
 };
 
+// Get logged in user info
+export const getLoggedInUserInfo = async (
+  req: Request | any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const user = req?.user;
+    return res.status(200).json({ success: true, user });
+  } catch (error) {
+    return next(error);
+  }
+};
 // User forgot password
 export const userForgotPassword = async (
   req: Request,
