@@ -6,6 +6,8 @@ import {
   trackOtpRequests,
   validateLoginUser,
   validateRegistrationData,
+  validateVerifySeller,
+  validateVerifyShop,
   validateVerifyUser,
   verifyForgotPasswordOtp,
   verifyOtp,
@@ -15,6 +17,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { ValidationError } from "@packages/error-handler";
 import { setCookie } from "../utils/cookies/setCookie";
+
+// <---------- USER CONTROLLERS ---------->
 
 // Register a new user
 export const userRegistration = async (
@@ -40,14 +44,14 @@ export const userRegistration = async (
     await trackOtpRequests(email, next);
     await sendOtp(name, email, "user-activation-mail");
 
-    return res
-      .status(200)
-      .json({ message: "OTP sent to email. Please verify your account." });
+    return res.status(200).json({
+      success: true,
+      message: "OTP sent to email. Please verify your account.",
+    });
   } catch (error) {
     return next(error);
   }
 };
-
 // Verify user with otp
 export const verifyUser = async (
   req: Request,
@@ -84,7 +88,6 @@ export const verifyUser = async (
     return next(error);
   }
 };
-
 // Login user
 export const loginUser = async (
   req: Request,
@@ -148,7 +151,6 @@ export const loginUser = async (
     return next(error);
   }
 };
-
 // Refresh token user
 export const refreshToken = async (
   req: Request,
@@ -187,7 +189,6 @@ export const refreshToken = async (
     return next(error);
   }
 };
-
 // Get logged in user info
 export const getLoggedInUserInfo = async (
   req: Request | any,
@@ -213,7 +214,6 @@ export const userForgotPassword = async (
     return next(error);
   }
 };
-
 // Verify forgot password OTP
 export const verifyUserForgotPasswordOtp = async (
   req: Request,
@@ -226,7 +226,6 @@ export const verifyUserForgotPasswordOtp = async (
     return next(error);
   }
 };
-
 // User reset password
 export const userResetPassword = async (
   req: Request,
@@ -265,8 +264,136 @@ export const userResetPassword = async (
       },
     });
 
-    return res.status(200).json({ message: "Password reset successfully!" });
+    return res
+      .status(200)
+      .json({ success: true, message: "Password reset successfully!" });
   } catch (error) {
     return next(error);
+  }
+};
+
+// <---------- SELLER CONTROLLERS ---------->
+
+// Seller registration
+export const sellerRegistration = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    validateRegistrationData(req.body, "seller");
+    const { name, email } = req.body;
+    const existingSeller = await prisma.sellers.findUnique({
+      where: { email },
+    });
+
+    if (existingSeller) {
+      throw new ValidationError("Seller already exists with this email!");
+    }
+
+    await checkOtpRestrictions(email, next);
+    await trackOtpRequests(email, next);
+    await sendOtp(name, email, "seller-activation-mail");
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP sent to email. Please verify your account.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+// Verify seller with otp
+export const verifySeller = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, otp, password, name, phone, country } = req.body;
+    validateVerifySeller(req.body);
+
+    const existingSeller = await prisma.sellers.findUnique({
+      where: { email },
+    });
+
+    if (existingSeller) {
+      throw new ValidationError("Seller already exists with this email!");
+    }
+
+    await verifyOtp(email, otp, next);
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const seller = await prisma.sellers.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        phoneNumber: phone,
+        country,
+      },
+      select: {
+        name: true,
+        email: true,
+        phoneNumber: true,
+        country: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return res.status(201).json({
+      success: true,
+      seller,
+      message: "Seller registered successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+// Create a new shop
+export const createShop = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { name, bio, address, openingHours, website, category, sellerId } =
+      req.body;
+    validateVerifyShop(req.body);
+
+    const shopData: any = {
+      name,
+      bio,
+      address,
+      openingHours,
+      category,
+      sellerId,
+    };
+
+    if (website && website.trim() !== "") {
+      shopData.website = website;
+    }
+
+    const shop = await prisma.shops.create({
+      data: shopData,
+    });
+
+    return res
+      .status(201)
+      .json({ success: true, shop, message: "Shop created!" });
+  } catch (error) {
+    next(error);
+  }
+};
+// Create stripe connect account link
+export const stripeConnectAccountLink = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+  } catch (error) {
+    next(error);
   }
 };

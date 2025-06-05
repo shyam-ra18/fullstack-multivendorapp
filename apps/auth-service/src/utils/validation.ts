@@ -12,7 +12,7 @@ const baseSchema = z.object({
 
 // Extend for "seller"
 const sellerExtras = z.object({
-  phone_number: z.string().min(1, "Phone number is required"),
+  phone: z.string().min(1, "Phone number is required"),
   country: z.string().min(1, "Country is required"),
 });
 
@@ -32,4 +32,23 @@ export const verifyUserSchema = z.object({
 export const verifyLoginSchema = z.object({
   email: z.string().regex(emailValidationRegex, "Invalid email format"),
   password: z.string().min(1, "Password is required"),
+});
+
+export const verifySellerSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().regex(emailValidationRegex, "Invalid email format"),
+  password: z.string().min(1, "Password is required"),
+  otp: z.string().length(4, "OTP must be 4 digits"),
+  phone: z.string(),
+  country: z.string(),
+});
+
+export const verifyShopSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  bio: z.string().min(1, "Bio is required"),
+  address: z.string().min(1, "Address is required"),
+  openingHours: z.string().min(1, "Opening hours is required"),
+  website: z.string().min(1, "Website is required"),
+  category: z.string().min(1, "Category is required"),
+  sellerId: z.string().min(1, "Seller ID is required"),
 });

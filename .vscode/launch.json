@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "type": "chrome",
+            "name": "nextjs",
+            "request": "attach",
+            "url": "http://localhost:8080/api/seller-registration"
+        }
+    ]
+}

@@ -3,6 +3,8 @@ import { ValidationError } from "@packages/error-handler";
 import {
   registrationSchema,
   verifyLoginSchema,
+  verifySellerSchema,
+  verifyShopSchema,
   verifyUserSchema,
 } from "./validation";
 import crypto from "crypto";
@@ -14,17 +16,13 @@ export const validateRegistrationData = (
   data: any,
   userType: "user" | "seller"
 ) => {
-  // const { name, email, password, phone_number, country } = data;
   const fullData = { ...data, userType };
-
   const result = registrationSchema.safeParse(fullData);
-
   if (!result.success) {
     const issues = result.error.format();
     throw new ValidationError("Validation error", issues);
   }
 };
-
 export const validateVerifyUser = (data: any) => {
   const result = verifyUserSchema.safeParse(data);
 
@@ -33,7 +31,6 @@ export const validateVerifyUser = (data: any) => {
     throw new ValidationError("Validation error", issues);
   }
 };
-
 export const validateLoginUser = (data: any) => {
   const result = verifyLoginSchema.safeParse(data);
 
@@ -42,7 +39,6 @@ export const validateLoginUser = (data: any) => {
     throw new ValidationError("Validation error", issues);
   }
 };
-
 export const checkOtpRestrictions = async (
   email: string,
   next: NextFunction
@@ -73,7 +69,6 @@ export const checkOtpRestrictions = async (
     );
   }
 };
-
 export const trackOtpRequests = async (email: string, next: NextFunction) => {
   const otpRequestKey = `otp_request_count:${email}`; // number of otp requests
 
@@ -89,7 +84,6 @@ export const trackOtpRequests = async (email: string, next: NextFunction) => {
   }
   await redis.set(otpRequestKey, otpRequestCount + 1, "EX", 60 * 60); // Track requests for 1 hour
 };
-
 export const sendOtp = async (
   name: string,
   email: string,
@@ -101,7 +95,6 @@ export const sendOtp = async (
   await redis.set(`opt:${email}`, otp, "EX", 60 * 5);
   await redis.set(`otp_cooldown:${email}`, "true", "EX", 60);
 };
-
 export const verifyOtp = async (
   email: string,
   otp: string,
@@ -132,27 +125,6 @@ export const verifyOtp = async (
 
   await redis.del(`otp:${email}`, failedAttemptsKey);
 };
-
-export const verifyForgotPasswordOtp = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const { email, otp } = req.body;
-
-    if (!email || !otp) {
-      throw new ValidationError("Please provide email address and otp");
-    }
-
-    await verifyOtp(email, otp, next);
-    return res.status(200).json({ message: "OTP verified successfully" });
-  } catch (error) {
-    next(error);
-    return;
-  }
-};
-
 export const handleForgotPassword = async (
   req: Request,
   res: Response,
@@ -166,12 +138,13 @@ export const handleForgotPassword = async (
     }
 
     // Find user/seller in db
-    const user = await prisma.users.findUnique({
-      where: { email },
-    });
+    const user =
+      userType === "user"
+        ? await prisma.users.findUnique({ where: { email } })
+        : await prisma.sellers.findUnique({ where: { email } });
 
     if (!user) {
-      throw new ValidationError("User not found");
+      throw new ValidationError(`${userType} not found`);
     }
 
     // check Otp restrictions
@@ -179,7 +152,13 @@ export const handleForgotPassword = async (
     await trackOtpRequests(email, next);
 
     // Generate OTP and send to email
-    await sendOtp(user.name, email, `forgot-password-user-mail`);
+    await sendOtp(
+      user.name,
+      email,
+      userType === "user"
+        ? "forgot-password-user-mail"
+        : "forgot-password-seller-mail"
+    );
 
     return res
       .status(200)
@@ -187,5 +166,44 @@ export const handleForgotPassword = async (
   } catch (error) {
     next(error);
     return;
+  }
+};
+export const verifyForgotPasswordOtp = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      throw new ValidationError("Please provide email address and otp");
+    }
+
+    await verifyOtp(email, otp, next);
+    return res
+      .status(200)
+      .json({ success: true, message: "OTP verified successfully" });
+  } catch (error) {
+    next(error);
+    return;
+  }
+};
+
+//Seller
+export const validateVerifySeller = (data: any) => {
+  const result = verifySellerSchema.safeParse(data);
+
+  if (!result.success) {
+    const issues = result.error.format();
+    throw new ValidationError("Validation error", issues);
+  }
+};
+export const validateVerifyShop = (data: any) => {
+  const result = verifyShopSchema.safeParse(data);
+
+  if (!result.success) {
+    const issues = result.error.format();
+    throw new ValidationError("Validation error", issues);
   }
 };
