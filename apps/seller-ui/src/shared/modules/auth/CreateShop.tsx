@@ -50,10 +50,11 @@ const CreateShop = ({ sellerId, setActiveStep }: {
                     <input
                         type='text'
                         placeholder='Shop bio'
+                        maxLength={100}
                         className='w-full p-2 border border-gray-300 rounded outline-none mb-1'
                         {...register('bio', {
                             required: 'Shop bio required',
-                            validate: (value) => countWords(value) <= 100 && 'Bio must be less than 100 words'
+                            // validate: (value) => countWords(value) >= 100 && 'Bio must be less than 100 words'
                         })}
                     />
                     {errors.bio && <span className='text-red-500 text-sm'>{errors.bio.message}</span>}
@@ -63,11 +64,12 @@ const CreateShop = ({ sellerId, setActiveStep }: {
                     <label className='block text-gray-700 mb-1'>Address *</label>
                     <input
                         type='text'
+                        maxLength={100}
                         placeholder='Shop location'
                         className='w-full p-2 border border-gray-300 rounded outline-none mb-1'
                         {...register('address', {
                             required: 'Shop Address is required',
-                            validate: (value) => countWords(value) <= 100 && 'Bio must be less than 100 words'
+                            // validate: (value) => countWords(value) >= 100 && 'Address must be less than 100 words'
                         })}
                     />
                     {errors.address && <span className='text-red-500 text-sm'>{errors.address.message}</span>}

@@ -1,10 +1,13 @@
 import { Router } from "express";
 import {
   createShop,
+  getLoggedInSellerInfo,
   getLoggedInUserInfo,
+  loginSeller,
   loginUser,
   refreshToken,
   sellerRegistration,
+  stripeConnectAccountLink,
   userForgotPassword,
   userRegistration,
   userResetPassword,
@@ -13,6 +16,7 @@ import {
 } from "../controllers/auth-controller";
 import { verifyForgotPasswordOtp } from "../utils/auth.helper";
 import { isAuthenticated } from "@packages/middleware/isAuthenticated";
+import { isSeller } from "@packages/middleware/authorizeRoles";
 
 const router: Router = Router();
 
@@ -31,8 +35,20 @@ router.post("/user-reset-password", userResetPassword);
 router.get("/logged-in-user", isAuthenticated, getLoggedInUserInfo);
 
 // <--------------------- Seller Routes --------------------->
+
+// Post Routes
 router.post("/seller-registration", sellerRegistration);
+router.post("/login-seller", loginSeller);
 router.post("/verify-seller", verifySeller);
 router.post("/create-shop", createShop);
+router.post("/create-stripe-link", stripeConnectAccountLink);
+
+// Get Routes
+router.get(
+  "/logged-in-seller",
+  isAuthenticated,
+  isSeller,
+  getLoggedInSellerInfo
+);
 
 export default router;

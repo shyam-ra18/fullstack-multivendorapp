@@ -8,12 +8,16 @@ export const isAuthenticated = async (
   next: NextFunction
 ) => {
   try {
-    const token =
-      req.cookies.access_Token ?? req.headers.authorization?.split(" ")[1];
+    const accessToken =
+      req.cookies["access_Token"] || req.cookies["seller_access_Token"];
+    const headerToken = req.headers.authorization?.split(" ")[1];
+    const token = accessToken || headerToken;
+
     if (!token) {
-      return res
-        .status(401)
-        .json({ message: "Unauthorized Access! Token missing." });
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized Access! Token missing.",
+      });
     }
 
     // Verify token
@@ -26,23 +30,41 @@ export const isAuthenticated = async (
     };
 
     if (!decoded) {
-      return res
-        .status(401)
-        .json({ message: "Unauthorized Access! Invalid token." });
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized Access! Invalid token.",
+      });
     }
 
-    const account = await prisma.users.findUnique({
-      where: { id: decoded.id },
-    });
+    let account;
+
+    if (decoded.role === "user") {
+      account = await prisma.users.findUnique({
+        where: { id: decoded.id },
+      });
+      req.user = account;
+    } else if (decoded.role === "seller") {
+      account = await prisma.sellers.findUnique({
+        where: { id: decoded.id },
+        include: { shop: true },
+      });
+      req.seller = account;
+    }
 
     if (!account) {
-      return res.status(401).json({ message: "Account not found." });
+      return res
+        .status(401)
+        .json({ success: false, message: "Account not found." });
     }
 
-    req.user = account;
+    req.role = decoded.role;
     return next();
   } catch (error) {
-    //   return res.status(401).json({ message: "Unauthorized Access! Token expired or Invalid." });
-    return next(error);
+    return res.status(401).json({
+      success: false,
+      message:
+        "Unauthorized Access! Token expired, invalid, or internal error.",
+      error: (error as Error).message,
+    });
   }
 };

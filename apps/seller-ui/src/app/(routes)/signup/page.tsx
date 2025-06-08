@@ -11,7 +11,7 @@ import React, { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 const Signup = () => {
-    const [activeStep, setActiveStep] = useState(3);
+    const [activeStep, setActiveStep] = useState(1);
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [canResend, setCanResend] = useState<boolean>(false);
     const [showOtp, setShowOtp] = useState<boolean>(false);
@@ -20,9 +20,7 @@ const Signup = () => {
     const [sellerData, setSellerData] = useState<FormData | null>(null);
     const [sellerId, setSellerId] = useState('');
     const inputRefs = useRef<HTMLInputElement[]>([]);
-
-    const router = useRouter();
-
+    const router = useRouter()
     const { register, handleSubmit, formState: { errors } } = useForm();
 
     const startResendTimer = () => {
@@ -96,6 +94,17 @@ const Signup = () => {
     }
 
     const connectStripe = async () => {
+        try {
+            router.push('/success');
+            return
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/create-stripe-link`, { sellerId });
+
+            if (response.data.url) {
+                window.location.href = response.data.url;
+            }
+        } catch (error) {
+            console.log(`Stripe Error: ${error}`);
+        }
     }
 
     return (
